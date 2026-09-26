@@ -44,11 +44,12 @@
 
             // Automatically scans your Google Sheet columns by matching header text
             const keys = Object.keys(row);
-            const titleKey = keys.find(k => k && k.toLowerCase().includes('title')) || keys[0];
-            const descKey = keys.find(k => k && k.toLowerCase().includes('desc')) || keys[1];
-            const latKey = keys.find(k => k && k.toLowerCase().includes('lat')) || keys[2];
-            const lngKey = keys.find(k => k && (k.toLowerCase().includes('long') || k.toLowerCase().includes('lng'))) || keys[3];
-
+            
+            const titleKey = keys[0];
+            const descKey = keys[1];
+            const latKey = keys[2];
+            const lngKey = keys[3];
+            
             const title = row[titleKey] || 'Location';     
             const description = row[descKey] || '';       
             const lat = parseFloat(row[latKey]);         
