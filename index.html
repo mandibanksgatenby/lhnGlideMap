@@ -23,7 +23,7 @@
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v11',
-        center:, 
+        center: [0, 0], 
         zoom: 1
         });
 
@@ -42,13 +42,15 @@
 
     function transformAndLoadData(rows) {
         const features = rows.map(row => {
-            // Read columns strictly by their order in your QUERY formula
-            const title = row[0] || 'Location';     // Col1 (A)
-            const description = row[1] || '';       // Col3 (C)
-            const lat = parseFloat(row[2]);         // Col58 (BF)
-            const lng = parseFloat(row[3]);         // Col59 (BG)
-
-            // Skip any row that doesn't have valid coordinate numbers
+            if (!row || row.length < 4) return null;
+            
+             // Read columns strictly by their order in your QUERY formula
+            const title = row[0] || 'Location';     
+            const description = row[1] || '';       
+            const lat = parseFloat(row[2]);         
+            const lng = parseFloat(row[3]);  
+            
+             // Skip any row that doesn't have valid coordinate numbers
             if (isNaN(lat) || isNaN(lng)) return null;
 
             return {
