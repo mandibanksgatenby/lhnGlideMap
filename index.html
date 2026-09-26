@@ -7,7 +7,7 @@
     <link href="https://mapbox.com" rel="stylesheet">
     <script src="https://mapbox.com"></script>
     <script src="https://cloudflare.com"></script>
-    <style>
+       <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
     </style>
@@ -15,7 +15,7 @@
 <body>
 <div id="map"></div>
 <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoiZ2xpZGVtYXBzIiwiYSI6ImNscTMwbmt3YjBvbnUyanAwbXlsbXk3ZDAifQ.X9_h6bXN4R8G4vEx1XwUXA';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZ2xpZGVtYXBzIiwiYSI6ImNscTMwbmt3YjBvbnUyanAwbXlsbXk3ZDAifQ.X9_h6bXN4R8G4vEx1XwUXA';
 
     // PASTE YOUR GENERATED GHOST SHEET CSV LINK INSIDE THE SINGLE QUOTES BELOW:
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQxjRtJFIL-r9EBF1VuC19f9FHqVgjtSv05kRnYjoHzNXetBgYab_QMi9qhex89iavPzmpzFCFqUsw9/pub?gid=0&single=true&output=csv';
@@ -25,39 +25,42 @@
         style: 'mapbox://styles/mapbox/light-v11',
         center:, 
         zoom: 1
-    });
+        });
 
     map.on('load', () => {
         Papa.parse(csvUrl, {
             download: true,
-            header: true,
+            header: false, // Turned off headers to use bulletproof column numbers
             skipEmptyLines: true,
             complete: function(results) {
-                transformAndLoadData(results.data);
-             }
+                // Remove the very first row because it just contains the column header names
+                const dataRows = results.data.slice(1);
+                transformAndLoadData(dataRows);
+            }
         });
     });
 
     function transformAndLoadData(rows) {
-        // This maps the exact headers generated from your =QUERY() formula 
-        // Google Sheets uses the header names from your master row 1 headers.
-        // If your column headers use different names, we will adjust them next.
         const features = rows.map(row => {
-            // Find the keys dynamically by position if headers vary
-            const keys = Object.keys(row);
-            const lat = parseFloat(row[keys[2]]); // BF column (3rd pulled)
-            const lng = parseFloat(row[keys[3]]); // BG column (4th pulled)
-            const title = row[keys[0]] || 'Location'; // A column (1st pulled)
+            // Read columns strictly by their order in your QUERY formula
+            const title = row[0] || 'Location';     // Col1 (A)
+            const description = row[1] || '';       // Col3 (C)
+            const lat = parseFloat(row[2]);         // Col58 (BF)
+            const lng = parseFloat(row[3]);         // Col59 (BG)
 
+            // Skip any row that doesn't have valid coordinate numbers
             if (isNaN(lat) || isNaN(lng)) return null;
 
             return {
                 type: 'Feature',
-                  geometry: { type: 'Point', coordinates: [lng, lat] },
-                properties: { title: title }
+                geometry: { type: 'Point', coordinates: [lng, lat] },
+                properties: { 
+                    title: title,
+                    description: description
+                }
             };
         }).filter(f => f !== null);
-
+        
         const geojsonData = { type: 'FeatureCollection', features: features };
 
         map.addSource('locations', {
@@ -69,12 +72,12 @@
         });
 
         map.addLayer({
-             id: 'clusters',
+            id: 'clusters',
             type: 'circle',
             source: 'locations',
             filter: ['has', 'point_count'],
             paint: {
-                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
+                                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
                 'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
             }
         });
@@ -88,7 +91,7 @@
                 'text-field': ['get', 'point_count_abbreviated'],
                 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
                 'text-size': 12
-             }
+            }
         });
 
         map.addLayer({
