@@ -52,6 +52,143 @@
       display: none;
     }
 
+    /* ---------- search box ---------- */
+    #search-container {
+      position: absolute; top: 10px; left: 54px;
+      z-index: 1000;
+      display: none;
+    }
+    #search-input {
+      width: 260px;
+      padding: 8px 12px 8px 32px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: border-color .15s;
+    }
+    #search-input:focus { border-color: #2563eb; }
+    #search-icon {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af; font-size: 14px;
+      pointer-events: none;
+    }
+    #search-results {
+      position: absolute; top: 100%; left: 0;
+      width: 260px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .search-result-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .search-result-item:hover { background: #f0f5ff; }
+    .search-result-item .sr-name { color: #111827; font-weight: 500; }
+    .search-result-item .sr-type { color: #6b7280; font-size: 11px; }
+    #search-clear {
+      position: absolute; right: 8px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: #9ca3af; font-size: 16px;
+      cursor: pointer; display: none;
+      padding: 2px 4px;
+    }
+    #search-clear:hover { color: #374151; }
+
+    /* ---------- filter panel ---------- */
+    #filter-toggle {
+      position: absolute; top: 10px; left: 324px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+      transition: border-color .15s;
+    }
+    #filter-toggle:hover { border-color: #2563eb; }
+    #filter-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    #filter-panel {
+      position: absolute; top: 48px; left: 54px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: none;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    #filter-panel h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .filter-actions button {
+      background: none;
+      border: 1px solid #d1d5db;
+      border-radius: 5px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #374151;
+      transition: all .15s;
+    }
+    .filter-actions button:hover { background: #f3f4f6; }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      padding: 4px 0;
+      cursor: pointer;
+      font-size: 13px;
+      color: #374151;
+    }
+    .filter-item input[type="checkbox"] {
+      margin-right: 8px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .filter-item label {
+      cursor: pointer;
+      flex: 1;
+      line-height: 1.3;
+    }
+    .filter-count {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-left: 6px;
+    }
+
     /* ---------- popup ---------- */
     .map-popup .leaflet-popup-content-wrapper {
       border-radius: 10px;
@@ -88,6 +225,27 @@
 
   <div id="counter"></div>
 
+  <!-- Search box -->
+  <div id="search-container">
+    <span id="search-icon">&#128269;</span>
+    <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
+    <button id="search-clear" title="Clear search">&times;</button>
+    <div id="search-results"></div>
+  </div>
+
+  <!-- Filter toggle button -->
+  <button id="filter-toggle">&#9776; Filter</button>
+
+  <!-- Filter panel -->
+  <div id="filter-panel">
+    <h4>Categories</h4>
+    <div class="filter-actions">
+      <button id="filter-all">Select All</button>
+      <button id="filter-none">Clear All</button>
+    </div>
+    <div id="filter-list"></div>
+  </div>
+
   <!-- Leaflet core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
@@ -107,19 +265,23 @@
     //                     ^ base deep‑link; each pin appends its Glide Row ID
     // ================================================================
 
-    // --- Initialise map (will auto‑fit to data bounds) ---
+    // --- State ---
+    var allMarkers = [];       // { marker, props, latlng }
+    var activeCategories = {};  // { categoryName: true/false }
+    var cluster;
+
+    // --- Initialise map ---
     var map = L.map('map', {
       zoomControl: true,
       attributionControl: true
-    }).setView([54.5, -2], 6);  // fallback centre (UK); overridden by fitBounds
+    }).setView([54.5, -2], 6);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
 
-    // --- Cluster layer (chunked loading keeps UI responsive) ---
-    var cluster = L.markerClusterGroup({
+    cluster = L.markerClusterGroup({
       chunkedLoading: true,
       chunkInterval: 100,
       chunkDelay: 10,
@@ -137,7 +299,7 @@
       return d.innerHTML;
     }
 
-    function popup(p) {
+    function popupHtml(p) {
       var h = '<div class="pop-inner">';
       h += '<h3>' + esc(p.n) + '</h3>';
       if (p.t) h += '<p>' + esc(p.t) + '</p>';
@@ -154,6 +316,172 @@
       var el = document.getElementById('error');
       el.textContent = msg;
       el.style.display = 'block';
+    }
+
+    function updateCounter() {
+      var visible = 0;
+      allMarkers.forEach(function (item) {
+        if (activeCategories[item.props.t] !== false) visible++;
+      });
+      var badge = document.getElementById('counter');
+      badge.textContent = visible.toLocaleString() + ' of ' + allMarkers.length.toLocaleString() + ' locations';
+      badge.style.display = 'block';
+    }
+
+    // --- Filtering ---
+    function applyFilters() {
+      cluster.clearLayers();
+      allMarkers.forEach(function (item) {
+        if (activeCategories[item.props.t] !== false) {
+          cluster.addLayer(item.marker);
+        }
+      });
+      map.addLayer(cluster);
+      updateCounter();
+    }
+
+    function buildFilterPanel(categories) {
+      var list = document.getElementById('filter-list');
+      list.innerHTML = '';
+
+      // Sort categories alphabetically
+      var sorted = Object.keys(categories).sort();
+
+      sorted.forEach(function (cat) {
+        var div = document.createElement('div');
+        div.className = 'filter-item';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.id = 'filter-' + cat.replace(/\s+/g, '-');
+        cb.addEventListener('change', function () {
+          activeCategories[cat] = cb.checked;
+          applyFilters();
+        });
+
+        var lbl = document.createElement('label');
+        lbl.htmlFor = cb.id;
+        lbl.textContent = cat || '(Uncategorised)';
+
+        var cnt = document.createElement('span');
+        cnt.className = 'filter-count';
+        cnt.textContent = '(' + categories[cat] + ')';
+
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        div.appendChild(cnt);
+        list.appendChild(div);
+      });
+
+      // Select All / Clear All buttons
+      document.getElementById('filter-all').addEventListener('click', function () {
+        sorted.forEach(function (cat) { activeCategories[cat] = true; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        applyFilters();
+      });
+      document.getElementById('filter-none').addEventListener('click', function () {
+        sorted.forEach(function (cat) { activeCategories[cat] = false; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        applyFilters();
+      });
+    }
+
+    // --- Search ---
+    function setupSearch() {
+      var input = document.getElementById('search-input');
+      var results = document.getElementById('search-results');
+      var clearBtn = document.getElementById('search-clear');
+      var debounceTimer;
+
+      input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        var query = input.value.trim().toLowerCase();
+
+        clearBtn.style.display = query ? 'block' : 'none';
+
+        if (query.length < 2) {
+          results.style.display = 'none';
+          return;
+        }
+
+        debounceTimer = setTimeout(function () {
+          var matches = [];
+          allMarkers.forEach(function (item) {
+            if (activeCategories[item.props.t] === false) return;
+            if (item.props.n.toLowerCase().indexOf(query) >= 0) {
+              matches.push(item);
+            }
+          });
+
+          results.innerHTML = '';
+          if (matches.length === 0) {
+            results.innerHTML = '<div class="search-result-item"><span class="sr-name">No results found</span></div>';
+            results.style.display = 'block';
+            return;
+          }
+
+          // Show max 8 results
+          matches.slice(0, 8).forEach(function (item) {
+            var div = document.createElement('div');
+            div.className = 'search-result-item';
+            div.innerHTML = '<span class="sr-name">' + esc(item.props.n) + '</span>'
+                          + (item.props.t ? '<br><span class="sr-type">' + esc(item.props.t) + '</span>' : '');
+            div.addEventListener('click', function () {
+              map.setView(item.latlng, 16);
+              item.marker.openPopup();
+              results.style.display = 'none';
+              input.value = item.props.n;
+            });
+            results.appendChild(div);
+          });
+
+          if (matches.length > 8) {
+            var more = document.createElement('div');
+            more.className = 'search-result-item';
+            more.innerHTML = '<span class="sr-type">' + (matches.length - 8) + ' more results...</span>';
+            results.appendChild(more);
+          }
+
+          results.style.display = 'block';
+        }, 150);
+      });
+
+      clearBtn.addEventListener('click', function () {
+        input.value = '';
+        results.style.display = 'none';
+        clearBtn.style.display = 'none';
+        input.focus();
+      });
+
+      // Close results when clicking elsewhere
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#search-container')) {
+          results.style.display = 'none';
+        }
+      });
+    }
+
+    // --- Filter toggle ---
+    function setupFilterToggle() {
+      var btn = document.getElementById('filter-toggle');
+      var panel = document.getElementById('filter-panel');
+      var open = false;
+
+      btn.addEventListener('click', function () {
+        open = !open;
+        panel.style.display = open ? 'block' : 'none';
+        btn.classList.toggle('active', open);
+      });
+
+      // Close panel when clicking elsewhere
+      document.addEventListener('click', function (e) {
+        if (open && !e.target.closest('#filter-panel') && !e.target.closest('#filter-toggle')) {
+          open = false;
+          panel.style.display = 'none';
+          btn.classList.remove('active');
+        }
+      });
     }
 
     // --- Fetch data and render ---
@@ -173,31 +501,44 @@
           return;
         }
 
-        var count = 0;
+        var categories = {};  // { name: count }
 
         geo.features.forEach(function (f) {
           var c = f.geometry.coordinates;       // [lng, lat]
-          var m = L.marker([c[1], c[0]]);
-          m.bindPopup(popup(f.properties), {
+          var latlng = L.latLng(c[1], c[0]);
+          var m = L.marker(latlng);
+          var props = f.properties;
+
+          m.bindPopup(popupHtml(props), {
             className: 'map-popup',
             maxWidth: 240,
             closeButton: true
           });
+
           cluster.addLayer(m);
-          count++;
+          allMarkers.push({ marker: m, props: props, latlng: latlng });
+
+          // Track categories
+          var cat = props.t || '(Uncategorised)';
+          categories[cat] = (categories[cat] || 0) + 1;
+          activeCategories[cat] = true;
         });
 
         map.addLayer(cluster);
 
-        // Auto‑zoom to fit all pins with a small margin
-        if (count > 0) {
+        if (allMarkers.length > 0) {
           map.fitBounds(cluster.getBounds().pad(0.05));
         }
 
-        // Show count badge
-        var badge = document.getElementById('counter');
-        badge.textContent = count.toLocaleString() + ' locations';
-        badge.style.display = 'block';
+        updateCounter();
+
+        // Build and show controls
+        buildFilterPanel(categories);
+        setupSearch();
+        setupFilterToggle();
+
+        document.getElementById('search-container').style.display = 'block';
+        document.getElementById('filter-toggle').style.display = 'block';
       })
       .catch(function (err) {
         console.error('Map load error:', err);
