@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Custom 10k Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://mapbox.com" rel="stylesheet">
+    <script src="https://mapbox.com"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZ2xpZGVtYXBzIiwiYSI6ImNscTMwbmt3YjBvbnUyanAwbXlsbXk3ZDAifQ.X9_h6bXN4R8G4vEx1XwUXA';
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [0, 20],
+        zoom: 1
+    });
+
+    // Clean Receiver Bridge: Listens directly to Glide's native data channel
+    window.addEventListener("message", (event) => {
+        // Handle direct object streaming from Glide
+        if (event.data) {
+            let geojsonData = null;
+                     
+            // If Glide sends it as a raw object
+            if (event.data.type === "FeatureCollection") {
+                geojsonData = event.data;
+            } 
+            // If Glide passes it as a text string parameter
+            else if (typeof event.data === 'string') {
+                try {
+                    const parsed = JSON.parse(event.data);
+                    if (parsed.type === "FeatureCollection") geojsonData = parsed;
+                } catch (e) {
+                    // Look for nested object parameters if passed as an embed property
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const rawParam = urlParams.get('data');
+                        if (rawParam) geojsonData = JSON.parse(rawParam);
+                    } catch (err) {}
+                }
+            }
+
+            if (geojsonData) {
+                updateMapData(geojsonData);
+            }
+        }
+    });
+
+    function updateMapData(geojsonData) {
+        if (map.getSource('locations')) {
+            map.getSource('locations').setData(geojsonData);
+            return;
+        }
+              map.addSource('locations', {
+            type: 'geojson',
+            data: geojsonData,
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 50
+        });
+
+        map.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            source: 'locations',
+            filter: ['has', 'point_count'],
+            paint: {
+                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
+                'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
+            }
+        });
+        map.addLayer({
+            id: 'cluster-count',
+            type: 'symbol',
+            source: 'locations',
+            filter: ['has', 'point_count'],
+            layout: {
+                'text-field': ['get', 'point_count_abbreviated'],
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                'text-size': 12
+            }
+        });
+
+        map.addLayer({
+            id: 'unclustered-point',
+            type: 'circle',
+            source: 'locations',
+            filter: ['!', ['has', 'point_count']],
+            paint: {
+                'circle-color': '#11b4da',
+                'circle-radius': 8,
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#fff'
+            }
+        });
+    }
+</script>
+</body>
+</html>
