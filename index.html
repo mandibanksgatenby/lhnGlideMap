@@ -1,117 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Custom 10k CSV Map</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">    
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Map</title>
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+  <!-- MarkerCluster plugin (handles 10K+ pins efficiently) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    #map { width: 100%; height: 100%; }
+
+    /* ---------- loading / error overlays ---------- */
+    .overlay {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      padding: 20px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      text-align: center;
+      max-width: 320px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    #loading { background: #fff; color: #333; }
+    #loading .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #e5e7eb; border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #error { display: none; background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    /* ---------- counter badge ---------- */
+    #counter {
+      position: absolute; top: 10px; right: 10px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.92);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px; color: #374151;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    /* ---------- popup ---------- */
+    .map-popup .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+      padding: 0;
+    }
+    .map-popup .leaflet-popup-content { margin: 0; min-width: 180px; }
+    .map-popup .leaflet-popup-tip { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .pop-inner { padding: 14px 16px; }
+    .pop-inner h3 { font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 3px; line-height: 1.3; }
+    .pop-inner p  { font-size: 12px; color: #6b7280; margin: 0 0 10px; }
+    .pop-inner a.detail-link {
+      display: inline-block;
+      padding: 7px 16px;
+      background: #2563eb; color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 12px; font-weight: 500;
+      transition: background .15s;
+    }
+    .pop-inner a.detail-link:hover { background: #1d4ed8; }
+  </style>
 </head>
 <body>
-<div id="map"></div>
-<script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiZ2xpZGVtYXBzIiwiYSI6ImNscTMwbmt3YjBvbnUyanAwbXlsbXk3ZDAifQ.X9_h6bXN4R8G4vEx1XwUXA';
 
-    // PASTE YOUR GENERATED GHOST SHEET CSV LINK INSIDE THE SINGLE QUOTES BELOW:
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/1HnJ17ysRN0SZs-JvGtbi7iK0o6dM1fIOv8ua1UfGdsA/export?format=csv';
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [0, 0], 
-        zoom: 1
-        });
+  <div id="map"></div>
 
-        map.on('load', () => {
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true, // Switched back to true to read column headers by name
-            skipEmptyLines: true,
-            complete: function(results) {
-                transformAndLoadData(results.data);
-            }
-        });
+  <div id="loading" class="overlay">
+    <div class="spinner"></div>
+    Loading locations&hellip;
+  </div>
+
+  <div id="error" class="overlay"></div>
+
+  <div id="counter"></div>
+
+  <!-- Leaflet core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <!-- MarkerCluster -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ================================================================
+    //  CONFIGURATION — fill in these three values, then deploy
+    // ================================================================
+    var DATA_URL       = 'https://script.google.com/macros/s/AKfycbwqg98do6ec68_j_i2N1gojcZKN1wVwAibVHHsS3U07SN2Yncoq-DreGKNRZW8af2OJDg/exec';
+    var TOKEN          = 'k7Xm9pQ2wR4v';
+    var GLIDE_DEEP     = 'https://a-thousand-classroom-bogm.glide.page/dl/59459f/s/9f7588/r/';
+    //                     ^ base deep‑link; each pin appends its Glide Row ID
+    // ================================================================
+
+    // --- Initialise map (will auto‑fit to data bounds) ---
+    var map = L.map('map', {
+      zoomControl: true,
+      attributionControl: true
+    }).setView([54.5, -2], 6);  // fallback centre (UK); overridden by fitBounds
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    // --- Cluster layer (chunked loading keeps UI responsive) ---
+    var cluster = L.markerClusterGroup({
+      chunkedLoading: true,
+      chunkInterval: 100,
+      chunkDelay: 10,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 17
     });
 
-        function transformAndLoadData(rows) {
-        const features = rows.map(row => {
-            if (!row) return null;
-
-            // Automatically scans your Google Sheet columns by matching header text
-            const keys = Object.keys(row);
-            
-            const titleKey = keys[0];
-            const descKey = keys[1];
-            const latKey = keys[2];
-            const lngKey = keys[3];
-            
-            const title = row[titleKey] || 'Location';     
-            const description = row[descKey] || '';       
-            const lat = parseFloat(row[latKey]);         
-            const lng = parseFloat(row[lngKey]);         
-
-            if (isNaN(lat) || isNaN(lng)) return null;
-
-            return {
-                type: 'Feature',
-                geometry: { type: 'Point', coordinates: [lng, lat] },
-                properties: { 
-                    title: title,
-                    description: description
-                }
-            };
-        }).filter(f => f !== null);
-        
-        const geojsonData = { type: 'FeatureCollection', features: features };
-
-        map.addSource('locations', {
-            type: 'geojson',
-            data: geojsonData,
-            cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50
-        });
-
-        map.addLayer({
-            id: 'clusters',
-            type: 'circle',
-            source: 'locations',
-            filter: ['has', 'point_count'],
-            paint: {
-                                'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 100, '#f1f075', 750, '#f28cb1'],
-                'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
-            }
-        });
-
-        map.addLayer({
-            id: 'cluster-count',
-            type: 'symbol',
-            source: 'locations',
-            filter: ['has', 'point_count'],
-            layout: {
-                'text-field': ['get', 'point_count_abbreviated'],
-                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                'text-size': 12
-            }
-        });
-
-        map.addLayer({
-            id: 'unclustered-point',
-            type: 'circle',
-            source: 'locations',
-            filter: ['!', ['has', 'point_count']],
-            paint: {
-                'circle-color': '#11b4da',
-                'circle-radius': 8,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff'
-            }
-        });
+    // --- Helpers ---
+    function esc(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
     }
-</script>
+
+    function popup(p) {
+      var h = '<div class="pop-inner">';
+      h += '<h3>' + esc(p.n) + '</h3>';
+      if (p.t) h += '<p>' + esc(p.t) + '</p>';
+      if (p.id) {
+        h += '<a class="detail-link" href="' + GLIDE_DEEP + encodeURIComponent(p.id)
+           + '" target="_blank" rel="noopener noreferrer">View Details</a>';
+      }
+      h += '</div>';
+      return h;
+    }
+
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      var el = document.getElementById('error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    // --- Fetch data and render ---
+    var url = DATA_URL + '?token=' + encodeURIComponent(TOKEN);
+
+    fetch(url, { redirect: 'follow' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (geo) {
+        document.getElementById('loading').style.display = 'none';
+
+        if (geo.error) { showError(geo.error); return; }
+        if (!geo.features || geo.features.length === 0) {
+          showError('No locations found.');
+          return;
+        }
+
+        var count = 0;
+
+        geo.features.forEach(function (f) {
+          var c = f.geometry.coordinates;       // [lng, lat]
+          var m = L.marker([c[1], c[0]]);
+          m.bindPopup(popup(f.properties), {
+            className: 'map-popup',
+            maxWidth: 240,
+            closeButton: true
+          });
+          cluster.addLayer(m);
+          count++;
+        });
+
+        map.addLayer(cluster);
+
+        // Auto‑zoom to fit all pins with a small margin
+        if (count > 0) {
+          map.fitBounds(cluster.getBounds().pad(0.05));
+        }
+
+        // Show count badge
+        var badge = document.getElementById('counter');
+        badge.textContent = count.toLocaleString() + ' locations';
+        badge.style.display = 'block';
+      })
+      .catch(function (err) {
+        console.error('Map load error:', err);
+        showError('Unable to load location data. Please refresh the page.');
+      });
+  })();
+  </script>
 </body>
 </html>
