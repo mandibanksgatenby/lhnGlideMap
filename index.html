@@ -162,6 +162,47 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
+   #own-toggle {
+      position: absolute; top: 10px; left: 504px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+      transition: border-color .15s;
+    }
+    #own-toggle:hover { border-color: #2563eb; }
+    #own-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    #own-panel {
+      position: absolute; top: 48px; left: 54px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: none;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    #own-panel h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    
     #filter-panel {
       position: absolute; top: 48px; left: 54px;
       z-index: 1000;
@@ -297,6 +338,19 @@
     <div id="ehe-list"></div>
   </div>
 
+  <!-- Ownership filter toggle button -->
+  <button id="own-toggle">&#9776; Ownership</button>
+
+  <!-- Ownership filter panel -->
+  <div id="own-panel">
+    <h4>Ownership / Governance</h4>
+    <div class="filter-actions">
+      <button id="own-all">Select All</button>
+      <button id="own-none">Clear All</button>
+    </div>
+    <div id="own-list"></div>
+  </div>
+  
   <!-- Leaflet core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
@@ -320,6 +374,7 @@
     var allMarkers = [];       // { marker, props, latlng }
     var activeCategories = {};  // { categoryName: true/false }
     var activeEhe = {};         // { eheValue: true/false }
+    var activeOwn = {};         // { ownershipValue: true/false }
     var cluster;
 
     // --- Initialise map ---
@@ -373,7 +428,7 @@
     function updateCounter() {
       var visible = 0;
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false) visible++;
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false) visible++;
       });
       
       var badge = document.getElementById('counter');
@@ -385,7 +440,7 @@
     function applyFilters() {
       cluster.clearLayers();
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false) {
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false) {
           cluster.addLayer(item.marker);
         }
       });
@@ -521,6 +576,8 @@
       var panel = document.getElementById('filter-panel');
       var eheBtn = document.getElementById('ehe-toggle');
       var ehePanel = document.getElementById('ehe-panel');
+      var ownBtn = document.getElementById('own-toggle');
+      var ownPanel = document.getElementById('own-panel');
       var catOpen = false;
       var eheOpen = false;
 
@@ -528,14 +585,22 @@
         catOpen = !catOpen;
         panel.style.display = catOpen ? 'block' : 'none';
         btn.classList.toggle('active', catOpen);
-        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); }
+        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); }
       });
 
       eheBtn.addEventListener('click', function () {
         eheOpen = !eheOpen;
         ehePanel.style.display = eheOpen ? 'block' : 'none';
         eheBtn.classList.toggle('active', eheOpen);
-        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); }
+        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); }
+      });
+
+      var ownOpen = false;
+      ownBtn.addEventListener('click', function () {
+        ownOpen = !ownOpen;
+        ownPanel.style.display = ownOpen ? 'block' : 'none';
+        ownBtn.classList.toggle('active', ownOpen);
+        if (ownOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); }
       });
 
       document.addEventListener('click', function (e) {
@@ -544,6 +609,9 @@
         }
         if (eheOpen && !e.target.closest('#ehe-panel') && !e.target.closest('#ehe-toggle')) {
           eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active');
+        }
+        if (ownOpen && !e.target.closest('#own-panel') && !e.target.closest('#own-toggle')) {
+          ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active');
         }
       });
     }
@@ -592,6 +660,50 @@
       });
     }
 
+    function buildOwnPanel(ownValues) {
+      var list = document.getElementById('own-list');
+      list.innerHTML = '';
+      var sorted = Object.keys(ownValues).sort();
+
+      sorted.forEach(function (val) {
+        var div = document.createElement('div');
+        div.className = 'filter-item';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.id = 'own-' + val.replace(/\s+/g, '-');
+        cb.addEventListener('change', function () {
+          activeOwn[val] = cb.checked;
+          applyFilters();
+        });
+
+        var lbl = document.createElement('label');
+        lbl.htmlFor = cb.id;
+        lbl.textContent = val;
+
+        var cnt = document.createElement('span');
+        cnt.className = 'filter-count';
+        cnt.textContent = '(' + ownValues[val] + ')';
+
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        div.appendChild(cnt);
+        list.appendChild(div);
+      });
+
+      document.getElementById('own-all').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeOwn[val] = true; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        applyFilters();
+      });
+      document.getElementById('own-none').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeOwn[val] = false; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        applyFilters();
+      });
+    }
+
     // --- Fetch data and render ---
     var url = DATA_URL + '?token=' + encodeURIComponent(TOKEN);
 
@@ -611,6 +723,7 @@
 
         var categories = {};  // { name: count }
         var eheValues = {};   // { name: count }
+        var ownValues = {};   // { name: count }
 
         geo.features.forEach(function (f) {
           var c = f.geometry.coordinates;       // [lng, lat]
@@ -637,6 +750,11 @@
           if (!eheValues) eheValues = {};
           eheValues[ehe] = (eheValues[ehe] || 0) + 1;
           activeEhe[ehe] = true;
+
+          // Track Ownership values
+          var own = props.own || '(Not specified)';
+          ownValues[own] = (ownValues[own] || 0) + 1;
+          activeOwn[own] = true;
         });
 
         map.addLayer(cluster);
@@ -648,13 +766,15 @@
         updateCounter();
 
         // Build and show controls
-buildFilterPanel(categories);
+        buildFilterPanel(categories);
         buildEhePanel(eheValues);
+        buildOwnPanel(ownValues);
         setupSearch();
         setupFilterToggle();
 
         document.getElementById('search-container').style.display = 'block';
         document.getElementById('filter-toggle').style.display = 'block';
+        document.getElementById('ehe-toggle').style.display = 'block';
         document.getElementById('ehe-toggle').style.display = 'block';
       })
       .catch(function (err) {
