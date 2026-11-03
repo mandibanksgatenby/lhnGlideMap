@@ -124,6 +124,44 @@
     }
     #filter-toggle:hover { border-color: #2563eb; }
     #filter-toggle.active { border-color: #2563eb; background: #eff6ff; }
+        #ehe-toggle {
+      position: absolute; top: 10px; left: 424px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+      transition: border-color .15s;
+    }
+    #ehe-toggle:hover { border-color: #2563eb; }
+    #ehe-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    #ehe-panel {
+      position: absolute; top: 48px; left: 54px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: none;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    #ehe-panel h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
     #filter-panel {
       position: absolute; top: 48px; left: 54px;
       z-index: 1000;
@@ -234,7 +272,7 @@
   </div>
 
   <!-- Filter toggle button -->
-  <button id="filter-toggle">&#9776; Filter</button>
+  <button id="filter-toggle">&#9776; Category</button>
 
   <!-- Filter panel -->
   <div id="filter-panel">
@@ -244,6 +282,19 @@
       <button id="filter-none">Clear All</button>
     </div>
     <div id="filter-list"></div>
+  </div>
+
+  <!-- EHE filter toggle button -->
+  <button id="ehe-toggle">&#9776; EHE</button>
+
+  <!-- EHE filter panel -->
+  <div id="ehe-panel">
+    <h4>EHE Provision</h4>
+    <div class="filter-actions">
+      <button id="ehe-all">Select All</button>
+      <button id="ehe-none">Clear All</button>
+    </div>
+    <div id="ehe-list"></div>
   </div>
 
   <!-- Leaflet core -->
@@ -268,6 +319,7 @@
     // --- State ---
     var allMarkers = [];       // { marker, props, latlng }
     var activeCategories = {};  // { categoryName: true/false }
+    var activeEhe = {};         // { eheValue: true/false }
     var cluster;
 
     // --- Initialise map ---
@@ -321,8 +373,9 @@
     function updateCounter() {
       var visible = 0;
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false) visible++;
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false) visible++;
       });
+      
       var badge = document.getElementById('counter');
       badge.textContent = visible.toLocaleString() + ' of ' + allMarkers.length.toLocaleString() + ' locations';
       badge.style.display = 'block';
@@ -332,7 +385,7 @@
     function applyFilters() {
       cluster.clearLayers();
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false) {
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false) {
           cluster.addLayer(item.marker);
         }
       });
@@ -466,21 +519,76 @@
     function setupFilterToggle() {
       var btn = document.getElementById('filter-toggle');
       var panel = document.getElementById('filter-panel');
-      var open = false;
+      var eheBtn = document.getElementById('ehe-toggle');
+      var ehePanel = document.getElementById('ehe-panel');
+      var catOpen = false;
+      var eheOpen = false;
 
       btn.addEventListener('click', function () {
-        open = !open;
-        panel.style.display = open ? 'block' : 'none';
-        btn.classList.toggle('active', open);
+        catOpen = !catOpen;
+        panel.style.display = catOpen ? 'block' : 'none';
+        btn.classList.toggle('active', catOpen);
+        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); }
       });
 
-      // Close panel when clicking elsewhere
+      eheBtn.addEventListener('click', function () {
+        eheOpen = !eheOpen;
+        ehePanel.style.display = eheOpen ? 'block' : 'none';
+        eheBtn.classList.toggle('active', eheOpen);
+        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); }
+      });
+
       document.addEventListener('click', function (e) {
-        if (open && !e.target.closest('#filter-panel') && !e.target.closest('#filter-toggle')) {
-          open = false;
-          panel.style.display = 'none';
-          btn.classList.remove('active');
+        if (catOpen && !e.target.closest('#filter-panel') && !e.target.closest('#filter-toggle')) {
+          catOpen = false; panel.style.display = 'none'; btn.classList.remove('active');
         }
+        if (eheOpen && !e.target.closest('#ehe-panel') && !e.target.closest('#ehe-toggle')) {
+          eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active');
+        }
+      });
+    }
+
+    function buildEhePanel(eheValues) {
+      var list = document.getElementById('ehe-list');
+      list.innerHTML = '';
+      var sorted = Object.keys(eheValues).sort();
+
+      sorted.forEach(function (val) {
+        var div = document.createElement('div');
+        div.className = 'filter-item';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.id = 'ehe-' + val.replace(/\s+/g, '-');
+        cb.addEventListener('change', function () {
+          activeEhe[val] = cb.checked;
+          applyFilters();
+        });
+
+        var lbl = document.createElement('label');
+        lbl.htmlFor = cb.id;
+        lbl.textContent = val;
+
+        var cnt = document.createElement('span');
+        cnt.className = 'filter-count';
+        cnt.textContent = '(' + eheValues[val] + ')';
+
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        div.appendChild(cnt);
+        list.appendChild(div);
+      });
+
+      document.getElementById('ehe-all').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeEhe[val] = true; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        applyFilters();
+      });
+      document.getElementById('ehe-none').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeEhe[val] = false; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        applyFilters();
       });
     }
 
@@ -502,6 +610,7 @@
         }
 
         var categories = {};  // { name: count }
+        var eheValues = {};   // { name: count }
 
         geo.features.forEach(function (f) {
           var c = f.geometry.coordinates;       // [lng, lat]
@@ -518,10 +627,16 @@
           cluster.addLayer(m);
           allMarkers.push({ marker: m, props: props, latlng: latlng });
 
-          // Track categories
+         // Track categories
           var cat = props.t || '(Uncategorised)';
           categories[cat] = (categories[cat] || 0) + 1;
           activeCategories[cat] = true;
+
+          // Track EHE values
+          var ehe = props.ehe || '(Not specified)';
+          if (!eheValues) eheValues = {};
+          eheValues[ehe] = (eheValues[ehe] || 0) + 1;
+          activeEhe[ehe] = true;
         });
 
         map.addLayer(cluster);
@@ -533,12 +648,14 @@
         updateCounter();
 
         // Build and show controls
-        buildFilterPanel(categories);
+buildFilterPanel(categories);
+        buildEhePanel(eheValues);
         setupSearch();
         setupFilterToggle();
 
         document.getElementById('search-container').style.display = 'block';
         document.getElementById('filter-toggle').style.display = 'block';
+        document.getElementById('ehe-toggle').style.display = 'block';
       })
       .catch(function (err) {
         console.error('Map load error:', err);
