@@ -383,7 +383,7 @@
               + '&name=' + encodeURIComponent(name)
               + '&id=' + encodeURIComponent(id)
               + '&vid=' + encodeURIComponent(VISITOR_ID);
-        navigator.sendBeacon(u);
+        new Image().src = u;
       } catch(e) {}
     }
     // ================================================================
