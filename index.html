@@ -368,8 +368,7 @@
     var TOKEN          = 'k7Xm9pQ2wR4v';
     var GLIDE_DEEP     = 'https://learnherenow.net/dl/59459f/s/9f7588/r/';
     //                     ^ base deep‑link; each pin appends its Glide Row ID
-        var TRACK_URL      = 'https://script.google.com/macros/s/AKfycbz7SZVtAtt5K0q8tTYgb2ner9xSUh8VokWIkBQcQDwlnB4SYqs-RJGZg4cvQVDPeALcUA/exec';
-    var VISITOR_ID;
+    var TRACK_URL      = 'https://script.google.com/macros/s/AKfycbyGatxfPTVvSJjmn1iKRphV_pCUSxzJKUAeLxAY7JZGbXa5nrIaHl_M1n4uYDpfOGA1Og/exec';    var VISITOR_ID;
     try {
       VISITOR_ID = localStorage.getItem('lhn_vid');
       if (!VISITOR_ID) {
@@ -378,14 +377,13 @@
       }
     } catch(e) { VISITOR_ID = 'v_unknown'; }
 
-   window.trackHit = function(name, id) {
+    window.trackHit = function(name, id) {
       try {
-        fetch(TRACK_URL, {
-          method: 'POST',
-          keepalive: true,
-          headers: {'Content-Type': 'text/plain'},
-          body: JSON.stringify({token: TOKEN, name: name, id: id, vid: VISITOR_ID})
-        });
+        var u = TRACK_URL + '?token=' + encodeURIComponent(TOKEN)
+              + '&name=' + encodeURIComponent(name)
+              + '&id=' + encodeURIComponent(id)
+              + '&vid=' + encodeURIComponent(VISITOR_ID);
+        navigator.sendBeacon(u);
       } catch(e) {}
     }
     // ================================================================
