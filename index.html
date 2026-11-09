@@ -378,7 +378,7 @@
       }
     } catch(e) { VISITOR_ID = 'v_unknown'; }
 
-    function trackHit(name, id) {
+   window.trackHit = function(name, id) {
       try {
         fetch(TRACK_URL, {
           method: 'POST',
