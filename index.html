@@ -429,9 +429,8 @@
       h += '<h3>' + esc(p.n) + '</h3>';
       if (p.t) h += '<p>' + esc(p.t) + '</p>';
       if (p.id) {
-        h += '<a class="detail-link" href="' + GLIDE_DEEP + encodeURIComponent(p.id)
-           + '" target="_top" onclick="trackHit(\'' + p.n.replace(/'/g, "\\'") + '\',\'' + p.id + '\')">View Details</a>';
-      }
+          h += '<a class="detail-link" href="' + GLIDE_DEEP + encodeURIComponent(p.id)
+           + '" target="_top" onclick="setTimeout(function(){trackHit(\'' + p.n.replace(/'/g, "\\'") + '\',\'' + p.id + '\')},0)">View Details</a>';      }
       h += '</div>';
       return h;
     }
