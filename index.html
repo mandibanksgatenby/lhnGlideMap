@@ -368,6 +368,26 @@
     var TOKEN          = 'k7Xm9pQ2wR4v';
     var GLIDE_DEEP     = 'https://learnherenow.net/dl/59459f/s/9f7588/r/';
     //                     ^ base deep‑link; each pin appends its Glide Row ID
+        var TRACK_URL      = 'https://script.google.com/macros/s/AKfycbz7SZVtAtt5K0q8tTYgb2ner9xSUh8VokWIkBQcQDwlnB4SYqs-RJGZg4cvQVDPeALcUA/exec';
+    var VISITOR_ID;
+    try {
+      VISITOR_ID = localStorage.getItem('lhn_vid');
+      if (!VISITOR_ID) {
+        VISITOR_ID = 'v_' + Math.random().toString(36).substring(2, 12);
+        localStorage.setItem('lhn_vid', VISITOR_ID);
+      }
+    } catch(e) { VISITOR_ID = 'v_unknown'; }
+
+    function trackHit(name, id) {
+      try {
+        fetch(TRACK_URL, {
+          method: 'POST',
+          keepalive: true,
+          headers: {'Content-Type': 'text/plain'},
+          body: JSON.stringify({token: TOKEN, name: name, id: id, vid: VISITOR_ID})
+        });
+      } catch(e) {}
+    }
     // ================================================================
 
     // --- State ---
@@ -412,7 +432,7 @@
       if (p.t) h += '<p>' + esc(p.t) + '</p>';
       if (p.id) {
         h += '<a class="detail-link" href="' + GLIDE_DEEP + encodeURIComponent(p.id)
-           + '" target="_top">View Details</a>';
+           + '" target="_top" onclick="trackHit(\'' + p.n.replace(/'/g, "\\'") + '\',\'' + p.id + '\')">View Details</a>';
       }
       h += '</div>';
       return h;
