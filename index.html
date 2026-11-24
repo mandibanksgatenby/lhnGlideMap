@@ -707,14 +707,14 @@
         catOpen = !catOpen;
         panel.style.display = catOpen ? 'block' : 'none';
         btn.classList.toggle('active', catOpen);
-        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
+        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); subOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
       });
 
       eheBtn.addEventListener('click', function () {
         eheOpen = !eheOpen;
         ehePanel.style.display = eheOpen ? 'block' : 'none';
         eheBtn.classList.toggle('active', eheOpen);
-        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
+        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); subOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
       });
 
       var ownOpen = false;
@@ -722,7 +722,7 @@
         ownOpen = !ownOpen;
         ownPanel.style.display = ownOpen ? 'block' : 'none';
         ownBtn.classList.toggle('active', ownOpen);
-        if (ownOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
+        if (ownOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); subOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
       });
 
       subBtn.addEventListener('click', function () {
