@@ -52,14 +52,24 @@
       display: none;
     }
 
-    /* ---------- search box ---------- */
-    #search-container {
-      position: absolute; top: 10px; left: 54px;
+    /* ---------- toolbar ---------- */
+    #toolbar {
+      position: absolute; top: 10px; left: 10px; right: 70px;
       z-index: 1000;
       display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    /* ---------- search box ---------- */
+    #search-container {
+      position: relative;
+      flex: 0 1 240px;
+      min-width: 140px;
     }
     #search-input {
-      width: 260px;
+      width: 100%;
       padding: 8px 12px 8px 32px;
       border: 2px solid #e5e7eb;
       border-radius: 8px;
@@ -79,7 +89,7 @@
     }
     #search-results {
       position: absolute; top: 100%; left: 0;
-      width: 260px;
+      width: 100%;
       max-height: 200px;
       overflow-y: auto;
       background: white;
@@ -108,78 +118,26 @@
     #search-clear:hover { color: #374151; }
 
     /* ---------- filter buttons ---------- */
-    #filter-toggle {
-      position: absolute; top: 10px; left: 324px;
-      z-index: 1000;
+    .filter-btn {
       background: rgba(255,255,255,0.95);
       border: 2px solid #e5e7eb;
       border-radius: 8px;
-      padding: 7px 14px;
+      padding: 7px 12px;
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: none;
       transition: border-color .15s;
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
-    #filter-toggle:hover { border-color: #2563eb; }
-    #filter-toggle.active { border-color: #2563eb; background: #eff6ff; }
-
-    #ehe-toggle {
-      position: absolute; top: 10px; left: 418px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.95);
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-family: inherit;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: none;
-      transition: border-color .15s;
-    }
-    #ehe-toggle:hover { border-color: #2563eb; }
-    #ehe-toggle.active { border-color: #2563eb; background: #eff6ff; }
-
-    #own-toggle {
-      position: absolute; top: 10px; left: 480px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.95);
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-family: inherit;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: none;
-      transition: border-color .15s;
-    }
-    #own-toggle:hover { border-color: #2563eb; }
-    #own-toggle.active { border-color: #2563eb; background: #eff6ff; }
-
-    #sub-toggle {
-      position: absolute; top: 10px; left: 588px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.95);
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-family: inherit;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: none;
-      transition: border-color .15s;
-    }
-    #sub-toggle:hover { border-color: #2563eb; }
-    #sub-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    .filter-btn:hover { border-color: #2563eb; }
+    .filter-btn.active { border-color: #2563eb; background: #eff6ff; }
 
     /* ---------- filter panels ---------- */
-    #filter-panel, #ehe-panel, #own-panel, #sub-panel {
-      position: absolute; top: 48px; left: 54px;
-      z-index: 1000;
+    .filter-panel {
+      position: absolute; top: 48px; left: 10px;
+      z-index: 1001;
       background: rgba(255,255,255,0.97);
       border: 1px solid #e5e7eb;
       border-radius: 10px;
@@ -191,7 +149,7 @@
       min-width: 220px;
       max-width: 280px;
     }
-    #filter-panel h4, #ehe-panel h4, #own-panel h4, #sub-panel h4 {
+    .filter-panel h4 {
       font-size: 12px;
       font-weight: 600;
       color: #374151;
@@ -242,6 +200,15 @@
       margin-left: 6px;
     }
 
+    /* ---------- mobile adjustments ---------- */
+    @media (max-width: 600px) {
+      #toolbar { right: 10px; }
+      #search-container { flex: 1 1 100%; min-width: 0; }
+      .filter-btn { padding: 7px 10px; font-size: 12px; }
+      .filter-panel { left: 10px; right: 10px; max-width: none; }
+      #counter { font-size: 11px; padding: 4px 10px; }
+    }
+
     /* ---------- popup ---------- */
     .map-popup .leaflet-popup-content-wrapper {
       border-radius: 10px;
@@ -278,19 +245,22 @@
 
   <div id="counter"></div>
 
-  <!-- Search box -->
-  <div id="search-container">
-    <span id="search-icon">&#128269;</span>
-    <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
-    <button id="search-clear" title="Clear search">&times;</button>
-    <div id="search-results"></div>
+  <!-- Toolbar: search + filter buttons in a flex row -->
+  <div id="toolbar">
+    <div id="search-container">
+      <span id="search-icon">&#128269;</span>
+      <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
+      <button id="search-clear" title="Clear search">&times;</button>
+      <div id="search-results"></div>
+    </div>
+    <button id="filter-toggle" class="filter-btn">&#9776; Category</button>
+    <button id="ehe-toggle" class="filter-btn">&#9776; EHE</button>
+    <button id="own-toggle" class="filter-btn">&#9776; Ownership</button>
+    <button id="sub-toggle" class="filter-btn">&#9776; Subjects</button>
   </div>
 
-  <!-- Filter toggle button -->
-  <button id="filter-toggle">&#9776; Category</button>
-
-  <!-- Filter panel -->
-  <div id="filter-panel">
+  <!-- Filter panels (positioned absolutely, outside toolbar flow) -->
+  <div id="filter-panel" class="filter-panel">
     <h4>Categories</h4>
     <div class="filter-actions">
       <button id="filter-all">Select All</button>
@@ -299,11 +269,7 @@
     <div id="filter-list"></div>
   </div>
 
-  <!-- EHE filter toggle button -->
-  <button id="ehe-toggle">&#9776; EHE</button>
-
-  <!-- EHE filter panel -->
-  <div id="ehe-panel">
+  <div id="ehe-panel" class="filter-panel">
     <h4>EHE Provision</h4>
     <div class="filter-actions">
       <button id="ehe-all">Select All</button>
@@ -312,11 +278,7 @@
     <div id="ehe-list"></div>
   </div>
 
-  <!-- Ownership filter toggle button -->
-  <button id="own-toggle">&#9776; Ownership</button>
-
-  <!-- Ownership filter panel -->
-  <div id="own-panel">
+  <div id="own-panel" class="filter-panel">
     <h4>Ownership / Governance</h4>
     <div class="filter-actions">
       <button id="own-all">Select All</button>
@@ -325,11 +287,7 @@
     <div id="own-list"></div>
   </div>
 
-  <!-- Subjects filter toggle button -->
-  <button id="sub-toggle">&#9776; Subjects</button>
-
-  <!-- Subjects filter panel -->
-  <div id="sub-panel">
+  <div id="sub-panel" class="filter-panel">
     <h4>Linked Subjects</h4>
     <div class="filter-actions">
       <button id="sub-all">Select All</button>
@@ -858,11 +816,7 @@
         setupSearch();
         setupFilterToggle();
 
-        document.getElementById('search-container').style.display = 'block';
-        document.getElementById('filter-toggle').style.display = 'block';
-        document.getElementById('ehe-toggle').style.display = 'block';
-        document.getElementById('own-toggle').style.display = 'block';
-        document.getElementById('sub-toggle').style.display = 'block';
+        document.getElementById('toolbar').style.display = 'flex';
       })
       .catch(function (err) {
         console.error('Map load error:', err);
@@ -872,3 +826,4 @@
   </script>
 </body>
 </html>
+ 
