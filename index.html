@@ -823,7 +823,18 @@
         div.appendChild(cnt);
         list.appendChild(div);
       });
+         document.getElementById('own-all').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeOwn[val] = true; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        applyFilters();
+      });
+      document.getElementById('own-none').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeOwn[val] = false; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        applyFilters();
+      });
 }
+    
     function buildSubPanel(subValues) {
       var list = document.getElementById('sub-list');
       list.innerHTML = '';
@@ -867,18 +878,7 @@
         applyFilters();
       });
     }
-      
-      document.getElementById('own-all').addEventListener('click', function () {
-        sorted.forEach(function (val) { activeOwn[val] = true; });
-        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
-        applyFilters();
-      });
-      document.getElementById('own-none').addEventListener('click', function () {
-        sorted.forEach(function (val) { activeOwn[val] = false; });
-        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
-        applyFilters();
-      });
-    }
+
 
     // --- Fetch data and render ---
     var url = DATA_URL + '?token=' + encodeURIComponent(TOKEN);
