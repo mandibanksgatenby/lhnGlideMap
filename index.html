@@ -53,18 +53,23 @@
     }
 
     /* ---------- toolbar ---------- */
-    /* ---------- toolbar ---------- */
     #toolbar {
-      position: absolute; top: 10px; left: 10px; right: 70px;
+      position: absolute; top: 10px; left: 50px; right: 10px;
       z-index: 1000;
       display: none;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
+      pointer-events: none;
     }
-    #toolbar-search {
+    #toolbar > * { pointer-events: auto; }
+
+    #toolbar-row1 {
       display: flex;
+      gap: 6px;
+      align-items: center;
     }
-    #toolbar-filters {
+
+    #toolbar-row2 {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
@@ -74,7 +79,7 @@
     #search-container {
       position: relative;
       flex: 1 1 auto;
-      min-width: 140px;
+      max-width: 260px;
     }
     #search-input {
       width: 100%;
@@ -105,6 +110,7 @@
       border-radius: 0 0 8px 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       display: none;
+      z-index: 1002;
     }
     .search-result-item {
       padding: 8px 12px;
@@ -130,27 +136,26 @@
       background: rgba(255,255,255,0.95);
       border: 2px solid #e5e7eb;
       border-radius: 8px;
-      padding: 7px 12px;
-      font-size: 13px;
+      padding: 6px 10px;
+      font-size: 12px;
       font-family: inherit;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       transition: border-color .15s;
       white-space: nowrap;
-      flex: 0 0 auto;
     }
     .filter-btn:hover { border-color: #2563eb; }
     .filter-btn.active { border-color: #2563eb; background: #eff6ff; }
 
     /* ---------- filter panels ---------- */
     .filter-panel {
-      position: absolute; top: 48px; left: 10px;
+      position: absolute; top: 72px; left: 50px;
       z-index: 1001;
       background: rgba(255,255,255,0.97);
       border: 1px solid #e5e7eb;
       border-radius: 10px;
       padding: 12px 14px;
-      max-height: calc(100vh - 70px);
+      max-height: calc(100vh - 90px);
       overflow-y: auto;
       box-shadow: 0 4px 16px rgba(0,0,0,0.12);
       display: none;
@@ -208,10 +213,10 @@
       margin-left: 6px;
     }
 
-    /* ---------- mobile adjustments ---------- */
-  @media (max-width: 500px) {
-      #toolbar { right: 10px; }
-      .filter-btn { font-size: 11px; padding: 6px 8px; }
+    /* ---------- mobile ---------- */
+    @media (max-width: 500px) {
+      #toolbar { left: 10px; }
+      #search-container { max-width: none; }
       .filter-panel { left: 10px; right: 10px; max-width: none; }
       #counter { font-size: 11px; padding: 4px 10px; }
     }
@@ -252,9 +257,9 @@
 
   <div id="counter"></div>
 
-  <!-- Toolbar: search + filter buttons in a flex row -->
+  <!-- Toolbar -->
   <div id="toolbar">
-    <div id="toolbar-search">
+    <div id="toolbar-row1">
       <div id="search-container">
         <span id="search-icon">&#128269;</span>
         <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
@@ -262,7 +267,7 @@
         <div id="search-results"></div>
       </div>
     </div>
-    <div id="toolbar-filters">
+    <div id="toolbar-row2">
       <button id="filter-toggle" class="filter-btn">&#9776; Category</button>
       <button id="ehe-toggle" class="filter-btn">&#9776; EHE</button>
       <button id="own-toggle" class="filter-btn">&#9776; Ownership</button>
@@ -270,7 +275,7 @@
     </div>
   </div>
 
-  <!-- Filter panels (positioned absolutely, outside toolbar flow) -->
+  <!-- Filter panels -->
   <div id="filter-panel" class="filter-panel">
     <h4>Categories</h4>
     <div class="filter-actions">
@@ -837,4 +842,3 @@
   </script>
 </body>
 </html>
- 
