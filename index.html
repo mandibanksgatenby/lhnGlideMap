@@ -53,19 +53,27 @@
     }
 
     /* ---------- toolbar ---------- */
+    /* ---------- toolbar ---------- */
     #toolbar {
       position: absolute; top: 10px; left: 10px; right: 70px;
       z-index: 1000;
       display: none;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 6px;
-      align-items: flex-start;
+    }
+    #toolbar-search {
+      display: flex;
+    }
+    #toolbar-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
     /* ---------- search box ---------- */
     #search-container {
       position: relative;
-      flex: 0 1 240px;
+      flex: 1 1 auto;
       min-width: 140px;
     }
     #search-input {
@@ -201,15 +209,9 @@
     }
 
     /* ---------- mobile adjustments ---------- */
-    @media (max-width: 800px) {
-      #search-container { flex: 0 1 180px; min-width: 120px; }
-      #search-input { width: 100%; font-size: 12px; padding: 6px 10px 6px 28px; }
-      .filter-btn { padding: 6px 8px; font-size: 11px; }
-    }
-    @media (max-width: 500px) {
+  @media (max-width: 500px) {
       #toolbar { right: 10px; }
-      #search-container { flex: 1 1 100%; min-width: 0; }
-      .filter-btn { padding: 6px 8px; font-size: 11px; }
+      .filter-btn { font-size: 11px; padding: 6px 8px; }
       .filter-panel { left: 10px; right: 10px; max-width: none; }
       #counter { font-size: 11px; padding: 4px 10px; }
     }
@@ -252,16 +254,20 @@
 
   <!-- Toolbar: search + filter buttons in a flex row -->
   <div id="toolbar">
-    <div id="search-container">
-      <span id="search-icon">&#128269;</span>
-      <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
-      <button id="search-clear" title="Clear search">&times;</button>
-      <div id="search-results"></div>
+    <div id="toolbar-search">
+      <div id="search-container">
+        <span id="search-icon">&#128269;</span>
+        <input type="text" id="search-input" placeholder="Search by name..." autocomplete="off">
+        <button id="search-clear" title="Clear search">&times;</button>
+        <div id="search-results"></div>
+      </div>
     </div>
-    <button id="filter-toggle" class="filter-btn">&#9776; Category</button>
-    <button id="ehe-toggle" class="filter-btn">&#9776; EHE</button>
-    <button id="own-toggle" class="filter-btn">&#9776; Ownership</button>
-    <button id="sub-toggle" class="filter-btn">&#9776; Subjects</button>
+    <div id="toolbar-filters">
+      <button id="filter-toggle" class="filter-btn">&#9776; Category</button>
+      <button id="ehe-toggle" class="filter-btn">&#9776; EHE</button>
+      <button id="own-toggle" class="filter-btn">&#9776; Ownership</button>
+      <button id="sub-toggle" class="filter-btn">&#9776; Subjects</button>
+    </div>
   </div>
 
   <!-- Filter panels (positioned absolutely, outside toolbar flow) -->
