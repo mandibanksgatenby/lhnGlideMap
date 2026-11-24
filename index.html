@@ -162,7 +162,44 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
+    #sub-toggle {
+      position: absolute; top: 10px; left: 604px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+      transition: border-color .15s;
+    }
+    #sub-toggle:hover { border-color: #2563eb; }
+    #sub-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    #sub-panel {
+      position: absolute; top: 48px; left: 54px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: none;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    #sub-panel h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
    #own-toggle {
       position: absolute; top: 10px; left: 504px;
       z-index: 1000;
@@ -202,7 +239,45 @@
       letter-spacing: 0.5px;
     }
 
-    
+        #sub-toggle {
+      position: absolute; top: 10px; left: 604px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: none;
+      transition: border-color .15s;
+    }
+    #sub-toggle:hover { border-color: #2563eb; }
+    #sub-toggle.active { border-color: #2563eb; background: #eff6ff; }
+    #sub-panel {
+      position: absolute; top: 48px; left: 54px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.97);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      display: none;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    #sub-panel h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     #filter-panel {
       position: absolute; top: 48px; left: 54px;
       z-index: 1000;
@@ -350,6 +425,19 @@
     </div>
     <div id="own-list"></div>
   </div>
+
+    <!-- Subjects filter toggle button -->
+  <button id="sub-toggle">&#9776; Subjects</button>
+
+  <!-- Subjects filter panel -->
+  <div id="sub-panel">
+    <h4>Linked Subjects</h4>
+    <div class="filter-actions">
+      <button id="sub-all">Select All</button>
+      <button id="sub-none">Clear All</button>
+    </div>
+    <div id="sub-list"></div>
+  </div>
   
   <!-- Leaflet core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -393,6 +481,7 @@
     var activeCategories = {};  // { categoryName: true/false }
     var activeEhe = {};         // { eheValue: true/false }
     var activeOwn = {};         // { ownershipValue: true/false }
+    var activeSub = {};         // { subjectValue: true/false }
     var cluster;
 
     // --- Initialise map ---
@@ -445,19 +534,31 @@
     function updateCounter() {
       var visible = 0;
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false) visible++;
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false && passesSubFilter(item.props.sub)) visible++;
       });
       
       var badge = document.getElementById('counter');
       badge.textContent = visible.toLocaleString() + ' of ' + allMarkers.length.toLocaleString() + ' locations';
       badge.style.display = 'block';
     }
-
+    
+    function passesSubFilter(subStr) {
+      var allFalse = Object.keys(activeSub).every(function(k) { return activeSub[k] === false; });
+      if (allFalse) return false;
+      if (!subStr) return activeSub['(No subjects)'] !== false;
+      var subs = subStr.split(/;\s*/);
+      for (var i = 0; i < subs.length; i++) {
+        var s = subs[i].trim();
+        if (s && activeSub[s] !== false) return true;
+      }
+      return false;
+    }
+    
     // --- Filtering ---
     function applyFilters() {
       cluster.clearLayers();
       allMarkers.forEach(function (item) {
-        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false) {
+        if (activeCategories[item.props.t] !== false && activeEhe[item.props.ehe || '(Not specified)'] !== false && activeOwn[item.props.own || '(Not specified)'] !== false && passesSubFilter(item.props.sub)) {
           cluster.addLayer(item.marker);
         }
       });
@@ -595,21 +696,25 @@
       var ehePanel = document.getElementById('ehe-panel');
       var ownBtn = document.getElementById('own-toggle');
       var ownPanel = document.getElementById('own-panel');
+      var subBtn = document.getElementById('sub-toggle');
+      var subPanel = document.getElementById('sub-panel');
       var catOpen = false;
       var eheOpen = false;
+      var ownOpen = false;
+      var subOpen = false;
 
       btn.addEventListener('click', function () {
         catOpen = !catOpen;
         panel.style.display = catOpen ? 'block' : 'none';
         btn.classList.toggle('active', catOpen);
-        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); }
+        if (catOpen) { eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
       });
 
       eheBtn.addEventListener('click', function () {
         eheOpen = !eheOpen;
         ehePanel.style.display = eheOpen ? 'block' : 'none';
         eheBtn.classList.toggle('active', eheOpen);
-        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); }
+        if (eheOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
       });
 
       var ownOpen = false;
@@ -617,7 +722,14 @@
         ownOpen = !ownOpen;
         ownPanel.style.display = ownOpen ? 'block' : 'none';
         ownBtn.classList.toggle('active', ownOpen);
-        if (ownOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); }
+        if (ownOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ubOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');}
+      });
+
+      subBtn.addEventListener('click', function () {
+        subOpen = !subOpen;
+        subPanel.style.display = subOpen ? 'block' : 'none';
+        subBtn.classList.toggle('active', subOpen);
+        if (subOpen) { catOpen = false; panel.style.display = 'none'; btn.classList.remove('active'); eheOpen = false; ehePanel.style.display = 'none'; eheBtn.classList.remove('active'); ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active'); }
       });
 
       document.addEventListener('click', function (e) {
@@ -629,6 +741,9 @@
         }
         if (ownOpen && !e.target.closest('#own-panel') && !e.target.closest('#own-toggle')) {
           ownOpen = false; ownPanel.style.display = 'none'; ownBtn.classList.remove('active');
+        }
+        if (subOpen && !e.target.closest('#sub-panel') && !e.target.closest('#sub-toggle')) {
+          subOpen = false; subPanel.style.display = 'none'; subBtn.classList.remove('active');
         }
       });
     }
@@ -709,6 +824,50 @@
         list.appendChild(div);
       });
 
+    function buildSubPanel(subValues) {
+      var list = document.getElementById('sub-list');
+      list.innerHTML = '';
+      var sorted = Object.keys(subValues).sort();
+
+      sorted.forEach(function (val) {
+        var div = document.createElement('div');
+        div.className = 'filter-item';
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.id = 'sub-' + val.replace(/\s+/g, '-');
+        cb.addEventListener('change', function () {
+          activeSub[val] = cb.checked;
+          applyFilters();
+        });
+
+        var lbl = document.createElement('label');
+        lbl.htmlFor = cb.id;
+        lbl.textContent = val;
+
+        var cnt = document.createElement('span');
+        cnt.className = 'filter-count';
+        cnt.textContent = '(' + subValues[val] + ')';
+
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        div.appendChild(cnt);
+        list.appendChild(div);
+      });
+
+      document.getElementById('sub-all').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeSub[val] = true; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
+        applyFilters();
+      });
+      document.getElementById('sub-none').addEventListener('click', function () {
+        sorted.forEach(function (val) { activeSub[val] = false; });
+        list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+        applyFilters();
+      });
+    }
+      
       document.getElementById('own-all').addEventListener('click', function () {
         sorted.forEach(function (val) { activeOwn[val] = true; });
         list.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = true; });
@@ -741,6 +900,7 @@
         var categories = {};  // { name: count }
         var eheValues = {};   // { name: count }
         var ownValues = {};   // { name: count }
+        var subValues = {};   // { name: count }
 
         geo.features.forEach(function (f) {
           var c = f.geometry.coordinates;       // [lng, lat]
@@ -772,6 +932,22 @@
           var own = props.own || '(Not specified)';
           ownValues[own] = (ownValues[own] || 0) + 1;
           activeOwn[own] = true;
+
+          // Track Subject values
+          var subStr = props.sub || '';
+          if (subStr) {
+            subStr.split(/;\s*/).forEach(function(s) {
+              s = s.trim();
+              if (s) {
+                subValues[s] = (subValues[s] || 0) + 1;
+                activeSub[s] = true;
+              }
+            });
+          } else {
+            subValues['(No subjects)'] = (subValues['(No subjects)'] || 0) + 1;
+            activeSub['(No subjects)'] = true;
+          }
+          
         });
 
         map.addLayer(cluster);
@@ -786,6 +962,7 @@
         buildFilterPanel(categories);
         buildEhePanel(eheValues);
         buildOwnPanel(ownValues);
+        buildSubPanel(subValues);
         setupSearch();
         setupFilterToggle();
 
@@ -793,6 +970,7 @@
         document.getElementById('filter-toggle').style.display = 'block';
         document.getElementById('ehe-toggle').style.display = 'block';
         document.getElementById('own-toggle').style.display = 'block';
+        document.getElementById('sub-toggle').style.display = 'block';
       })
       .catch(function (err) {
         console.error('Map load error:', err);
